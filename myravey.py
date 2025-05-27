@@ -175,6 +175,10 @@ def load_points(filename: str) -> List[Point]:
     """Загружает точки из файла"""
     points = []
     try:
+        if not os.path.exists(filename):
+            print(f"Файл {filename} не найден. Создаю тестовые данные...")
+            return create_test_data(filename)
+
         with open(filename, 'r') as f:
             for line in f:
                 if line.strip():
@@ -193,31 +197,10 @@ def load_points(filename: str) -> List[Point]:
         return None
 
 
-def create_test_data(filename: str):
-    """Создает тестовые данные"""
-    points = [
-        Point(0, 55.751244, 37.618423, 10),  # Москва, Красная площадь
-        Point(1, 55.753930, 37.621519, 8),  # ГУМ
-        Point(2, 55.752023, 37.617494, 6),  # Мавзолей
-        Point(3, 55.757973, 37.619663, 7),  # Большой театр
-        Point(4, 55.749676, 37.620423, 9),  # Парк Зарядье
-        Point(5, 55.755831, 37.617364, 5),  # Исторический музей
-    ]
-
-    try:
-        with open(filename, 'w') as f:
-            for p in points:
-                f.write(f"{p.id},{p.lat},{p.lon},{p.weight}\n")
-        print(f"Создан тестовый файл {filename}")
-        return points
-    except Exception as e:
-        print(f"Ошибка при создании тестового файла: {e}")
-        return None
-
 
 def plot_route_on_map(route: Route, transport: str, filename: str = 'route.html'):
     """Визуализирует маршрут на карте с использованием Folium"""
-    if len(route) == 0:
+    if route is None or len(route) == 0:
         print("Нет точек для отображения")
         return
 
@@ -265,15 +248,15 @@ def main():
     points = load_points(DATA_FILE)
 
     if points is None:
-            print("Не удалось создать тестовые данные. Программа завершена.")
-            return
+        print("Не удалось загрузить или создать данные. Программа завершена.")
+        return
 
     print(f"\nЗагружено {len(points)} точек:")
     for p in points:
         print(p)
 
     # Параметры задачи
-    max_time_hours = 1.0  # Максимальное время в часах
+    max_time_hours = 3.0  # Максимальное время в часах
     transport = 'pedestrian'  # Способ передвижения
 
     # Запуск муравьиного алгоритма
@@ -282,6 +265,10 @@ def main():
 
     aco = AntColonyOptimizer(points, max_time_hours, transport)
     best_route = aco.run()
+
+    if best_route is None:
+        print("Не удалось найти подходящий маршрут с заданными ограничениями.")
+        return
 
     print(f"\nОптимальный маршрут найден за {time.time() - start_time:.2f} секунд")
     print(best_route)
